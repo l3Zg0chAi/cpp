@@ -20,14 +20,23 @@ int main()
     return 0;
 }
 
-nhìn lại vào dòng code : base* obj = new derived;
--> tại thời điểm biên dịch, thì complier sẽ kiểm tra xem class derived có kế  thừa class base hay không, 
+--> nhìn lại vào dòng code : base* obj = new derived;
+- tại thời điểm biên dịch, thì complier sẽ kiểm tra xem class derived có kế thừa class base hay không,
+                          (và nó hoàn toàn biết là có, khi đó thì nó biết 2 thứ, static type là base*, còn dynamic type là derived* thì phải trong runtime)
+
 Nếu có, thì con trỏ "obj" được tạo ra là kiểu "base*" và được gán trỏ tới một đối tượng của lớp "derived" là hợp lệ, tại đây sẽ không có khởi tạo vùng nhớ
-cho object bởi new, do đó trình biên dịch chưa thể biết chính xác kiểu của đối tượng, chỉ đến khi chương trình chạy, vùng nhớ được khởi tạo, con trỏ trỏ tới,
-lúc đó mới biết là chính xác đối tượng đó là kiểu derived
+cho object bởi new, do đó trình biên dịch chưa thể biết chính xác kiểu của đối tượng (chuẩn, vì lúc này nó chỉ biết static type là base* thôi), 
+chỉ đến khi chương trình chạy, vùng nhớ được khởi tạo, con trỏ trỏ tới, lúc đó mới biết là chính xác đối tượng đó là kiểu derived*
+
 -> vậy nên lỗi là tại thời điểm complie,complier không biết được rằng obj có trỏ đến 1 object kiểu derived thật không hay chỉ là 1 kiểu của class khác cũng 
 kế thừa base, thì class đó nó đâu có thằng funcDerived -> gọi funcDerived là hoàn toàn k hợp lý
 
+tóm lại là:
+Compiler chỉ cho phép gọi những member có trong static type của biểu thức: ở đây static type là base*, nên chỉ gọi được những hàm mà base khai báo.
+Virtual chỉ có tác dụng: sau khi compiler đã xác nhận lời gọi là hợp lệ thì runtime mới quyết định gọi implementation nào
+Nó không làm cho base* tự động thấy được hàm mới của derived.
+
+cách đơn giản (case là được)
 =============================================================================================================================================================
 
 #include <iostream>

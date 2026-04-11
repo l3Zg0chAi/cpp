@@ -35,9 +35,29 @@ int&& r = 1+2;
 int&& r = 3;
 -> it is same
 - expression '1+2' creates temporary value - nó là rvalue with value là 3, rvalue reference r này sau đó được khởi tạo refer tới cái rvalue này
-- có thể truy cập contents của rvalue(đọc ghi oke) và extend lifetime của rvalue này through rvalue reference, nhớ là thông qua rvalue ref, chứ k phải trực tiếp
-- ta có thể dùng cout << &r để in địa chỉ của cái rvalue ref corresponds vói cái rvalue mà nó refer tới, chứ đấy cũng k phải là địa chỉ của original rvalue tạo ra bởi '1+2', vì ta k thể cout << &(1+2), vì cái rvalue nó k có 1 cái gọi là persistent memory: vùng nhớ valid tới cuối chương trình hoặc it nhất là tới lúc nó được hủy đi 1 cách explicit, rõ ràng
-- và temporary value được đại diện bởi cái rvalue và được created và destroyed bởi biểu thức '1+2', nhưng như đã nói ở trên, lifetime của nó sẽ được extend bởi thằng rvalue reference
+- có thể truy cập contents của rvalue(đọc ghi oke) và extend lifetime của rvalue này through rvalue reference, nhớ là thông qua rvalue ref, 
+chứ k phải trực tiếp
+- ta có thể dùng cout << &r để in địa chỉ của cái rvalue ref corresponds vói cái rvalue mà nó refer tới, chứ đấy cũng k phải là địa chỉ của 
+original rvalue tạo ra bởi '1+2', vì ta k thể cout << &(1+2), vì cái rvalue nó k có 1 cái gọi là persistent memory: vùng nhớ valid tới cuối 
+chương trình hoặc it nhất là tới lúc nó được hủy đi 1 cách explicit, rõ ràng
+- và temporary value được đại diện bởi cái rvalue và được created và destroyed bởi biểu thức '1+2', nhưng như đã nói ở trên, 
+lifetime của nó sẽ được extend bởi thằng rvalue reference
+
+// ôn tập 04/11/2026
+int a = 4, tạo 1 object 4 bytes gắn giá trị 4 
+int a = b; object b 4 bytes, tạo 1 object a 4 bytes rôi copy giá trị b sang 
+int& a = b; , object b 4 bytes, a ref vào, a vs b là chung 1 vùng nhớ 4 _byteswap_uint64
+
+int&& a = 4; tạo 1 object tạm với giá trị 4, vùng nhớ 4 bytes a sẽ move tới, 
+nghĩa là a cũng dùng vùng nhớ đó luôn, chỗ này nó khá giống với int &a = b; khác là b là 1 biến có sẵn, 
+còn int &&a = 4 thì compiler phải tạo ra 1 oject tạm trước rồi a mới ref đến
+
+- sau cả 2 cái này thì 1 cái lvalue ref, 1 cái rvalue ref, 
+nhưng mà cả 2 đều có thể truy cập được contents của cái object mà nó refer tới, và cả 2 đều có thể set value cho cái object đó thông qua a
+ - khác 1 chỗ nữa về mặt ý nghĩa, move semetic
+
+int a = b với int&& a = std::move(b), thì bản chất std::move nó kiểu như cast b thành rvalue, thì a nó ref tới, tại sao nói thế, nhìn ví dụ bên dưới
+-> ko tốn thêm vùng nhớ cũng ko mất chi phí copy
 
 lvalue ref thì chỉ bind tới lvalue
 rvalue ref thì chỉ bind tới rvalue
@@ -72,7 +92,7 @@ int main (){
     MClass a;
     *(a.mp) = 20;
     MClass b = a; (1) sẽ gọi copy consructor, vì đối số là 1 lvalue
-    MClass b = std:move(a); (2) sẽ gọi move constructor, vì đối số là 1 rvalue ref, nhưng cần thì nó có thể implicit convert tới const lvalue ref 
+    MClass b = std:move(a); (2) sẽ gọi move constructor, vì đối số là 1 rvalue ref, nhưng cần thì nó có thể implicit convert tới const lvalue ref
     cout << "b.mp: " << " " << &(b.mp) << " " << b.mp << " " << *(b.mp) << endl;
     if(a.mp == nullptr){
         cout << "pointer is null" << endl;
@@ -82,9 +102,11 @@ int main (){
     }
     return 0;
 }
-- mình có thể thấy cái copy constuctor với non-const nó có thể làm 1 việc tương tự y hệt như move construcotr, nhưng rõ ràng là sai ý nghĩa của copy vì copy xong mà cho thằng cũ null mẹ luôn, ý là k dùng nữa
+- mình có thể thấy cái copy constuctor với non-const nó có thể làm 1 việc tương tự y hệt như move construcotr, nhưng rõ ràng là sai ý nghĩa của 
+copy vì copy xong mà cho thằng cũ null mẹ luôn, ý là k dùng nữa
 - copy xong là còn dùng thằng cũ, còn move xong là k dùng thằng cũ nữa
-- std:move() nó trả về 1 rvalue ref tới thằng a, và nó có thể implicit convert to const lvalue ref nên nó thỏa mã để gọi đến copy constructor với tham số const, nhưng khi đấy thì đâu có thể change được cái gì nữa đâu, move xong mà thằng cũ vẫn còn nguyên
+- std:move() nó case về 1 rvalue ref tới thằng a, và nó có thể implicit convert to const lvalue ref nên nó thỏa mã để gọi đến copy constructor 
+với tham số const, nhưng khi đấy thì đâu có thể change được cái gì nữa đâu, move xong mà thằng cũ vẫn còn nguyên
 -> cái cơ chế move sẽ là: gán 1 thằng vào 1 thằng đã có then cho thằng đã có về null -> đỡ tốn time phải tạo memory cho thằng mới rồi copy sang
 
 sử dụng rvalue reference hay std::move giúp ta loại bỏ được thao tác cấp phát, copy dữ liệu , hủy object, nói chung là kha khá performance
@@ -94,8 +116,17 @@ sử dụng rvalue reference hay std::move giúp ta loại bỏ được thao t�
 OPERATORS
 
 - về unary operator nó là toán tử 1 ngôi, nghĩa là chỉ cần 1 toán hạng để sử dụng được, ví dụ như ++ hay --
-- về binary operator thì nó hoạt động trên 2 toán hạng, đơn giản như ==, !=, >, <...có 1 loại đặc biệt là toán tử bit(&, |, ^), các toạn hạng của nó sẽ phải chuyển
-sang kiểu nhị phân 1 với 0, và ghép chúng lần lượt theo toán tử để ra kết quả
+- về binary operator thì nó hoạt động trên 2 toán hạng, đơn giản như ==, !=, >, <...có 1 loại đặc biệt là toán tử bit(&, |, ^, >>, <<), 
+các toạn hạng của nó sẽ phải chuyển sang kiểu nhị phân 1 với 0, và ghép chúng lần lượt theo toán tử để ra kết quả
+bit thì có msb và lsb, 
+msb như nào, 1 bytes như sau
+                            vị trị bit  7 6 5 4 3 2 1 0
+                  nó điền từ bit 7 xuống -> msb
+                                                      lsb <- nó điền từ bit 0 lên
+trong network embedded thì bit nó điền theo msb, còn thường giá trị gắn bình thường nó điền là labs
+nên sẽ có kiểu giá trị giải mã từ network về theo lsb, gắn vào 1 biến thì sau đó biến nó khác mẹ ban đầu
+                                                      -> vì lúc gắn nó gắn theo lsb nên bị đảo bit mất
+
 - toán tử logic: &&, ||
 - toán tử 3 ngôi, ví dụ ((a>b?a:b)>c)? (a>b?a:b):c, ban đầu so sánh a vs b, sau đó so sánh vs c
 
@@ -129,13 +160,11 @@ hoặc kể cả con trỏ trỏ đến 1 con trỏ khác thì cũng thế -> c�
 
 => cái việc khai báo con trỏ như thế nào sẽ quyết định việc có thể thao tác 2 thứ trên như thế nào
 
-- type* p thì p là 1 con trỏ trỏ đến 1 vùng nhớ kiểu type, có thể trỏ sang 1 vùng nhớ khác, nắm giữ địa chỉ của vùng nhớ đó. có thể thay đổi giá trị của vùng nhớ đó 
+- type* p: "không const" - có thể trỏ sang vùng nhớ khác, hay thay đổi giá trị tại vùng nhớ nó trỏ tới
 thông qua con trỏ
-- const type* p thì p là con trỏ trỏ đến vùng nhớ kiểu const type, or kiểu type cũng được, cũng có thể trỏ sang vùng nhớ khác, nhưng không thể thay đổi giá trị vùng 
-nhớ đó thông qua con trỏ
-- type* const p thì p là 1 hằng con trỏ, không trỏ đi chỗ khác được, mean trỏ đến 1 vùng nhớ duy nhất kiểu type, có thể thay đổi giá trị thông qua con trỏ
-- const type* const p thì p là 1 con trỏ hằng trỏ đến 1 hằng giá trị, vẫn có thể trỏ đến 1 giá trị không hằng nhưng ý nghĩa ở đây là nó không thể trỏ đi chỗ khác cũng 
-k thể thay đổi giá trị nó trỏ đến thông qua nó
+- const type* p : "kiểu là const" - có thể  trỏ sang vùng nhớ khác, ko thay đổi được giá trị tại vùng nhớ nó trỏ
+- type* const p : "con trỏ là const" - ko trỏ sang vùng nhớ khác được, nhưng có thể thay đổi được giá trị tại vùng nhớ nó trỏ
+- const type* const p: "cả kiểu và con trỏ đều là const" - ko trỏ sang vùng nhớ khác được, ko thay đổi được giá trị tại vùng nhớ nó trỏ
 
 chốt lại:
 - type* p: thoải mái
@@ -186,28 +215,30 @@ std::shared_ptr<mclass> ob2(ob1); -> tăng reference count
 
 but std::shared_ptr<mclass> ob2(std::move(ob1)); -> dont tăng reference count, vì thằng ob1 về null rồi nghĩa là nó k trỏ tới object nữa r
 
-- reference count về tới 0, the last std::shared_ptr sẽ destroy cái object mà nó point to
-- size gấp đôi size của raw pointer: vì cơ bản có thể hiểu gồm share pointer gồm có 2 "parts", 1 là raw pointer quản lý object, 2 là khối control block được quản lý nội bộ bởi đối tượng share pointer
+- reference count về tới 0, the last object std::shared_ptr sẽ destroy cái object mà nó point to
+- size gấp đôi size của raw pointer: vì cơ bản có thể hiểu share pointer gồm có 2 "parts", 1 là raw pointer quản lý object, 2 là khối control block được quản lý nội bộ 
+bởi đối tượng share pointer
 - memory cho reference count phải được cấp phát động
 - tăng giảm cho reference count phải là atomic
-- support custom deleter, but not like unique pointer, - custom deleter is not part of unique pointer type
-    auto customDelete1= [](mclass* ob){
-        cout << "customDelete1" << endl;
-        delete ob;
-    };
+- support custom deleter, but not like unique pointer, - custom deleter is not part of share pointer type
 
-    auto customDelete2= [](mclass* ob){
-        cout << "customDelete2" << endl;
-        delete ob;
-    };
-    std::shared_ptr<mclass> ob4(new mclass{}, customDelete1); -> nó tạo 1 control block
-    std::shared_ptr<mclass> ob5(new mclass{}, customDelete2); -> cũng tạo 1 control block
-    ob4 = ob5; -> delete object được trỏ bởi ob4, và line code này có thể thấy custom delete k phải là a part of type của share pointer
-    while(true){}
+    auto customDelete1 = [](mclass* ob){
+        cout << "customDelete1" << endl;
+        delete ob;
+    };
+
+    auto customDelete2 = [](mclass* ob){
+        cout << "customDelete2" << endl;
+        delete ob;
+    };
+    std::shared_ptr<mclass> ob4(new mclass{}, customDelete1); -> nó tạo 1 control block
+    std::shared_ptr<mclass> ob5(new mclass{}, customDelete2); -> cũng tạo 1 control block
+    ob4 = ob5; -> delete object được trỏ bởi ob4, và line code này có thể thấy custom delete k phải là a part of type của share pointer
+    while(true){}
 
 nhưng nếu
     std::shared_ptr<mclass> ob4(new mclass{}, customDelete1); ->  nó tạo 1 control block
-    std::shared_ptr<mclass> ob5(ob4); -> sẽ k cũng tạo 1 control block
+    std::shared_ptr<mclass> ob5(ob4); -> sẽ k tạo thêm 1 control block
     ob4 = ob5; -> sẽ k có gì xảy ra cả
 và yeah, custom deleter sẽ k làm tăng size của share pointer, chắc chắn thì nó cũng cần memory để lưu trữ nhưng sẽ k phải là share_ptr
 - control block sẽ chứa reference count/ weak pointer/ copy of custom deleter allocator ...
@@ -216,85 +247,95 @@ nếu tạo share pointer thông qua raw resource
 - dùng make_shared thì k thể dùng được custom deleter
 
 - truyền con trỏ this sẽ được tính là raw pointer, khi này dùng public std::enable_shared_from_this<Widget>
-ví dụ:
 
+ví dụ:
 #include header
 class Widget;
-std::vector<std::shared_ptr<Widget>> processedWidgets;
-class Widget {
+std::vector<std::shared_ptr<Widget>> widgetsArray;
+class Widget
+{
 public:
+    Widget()
+    {
+        cout << "Widget created" << endl;
+    }
 
-    void process(){
-        processedWidgets.emplace_back(this);
-        for(int i = 0; i<listmclass.size(); i++){
-            cout << "inside vector: " << listmclass[i].use_count() << endl;
-        }
-    }
-    …
+    ~Widget()
+    {
+        cout << "Widget destroyed" << endl;
+    }
+
+    void processWidget()
+    {   
+        widgetsArray.emplace_back(this);
+        for(int i = 0; i < widgetsArray.size(); i++)
+        {
+            cout << "inside vector: " << widgetsArray[i].use_count() << endl;
+        }
+    }
 };
 
 int main (){
+    std::shared_ptr<Widget> widget1(new Widget());
+    cout << "widget1: " << widget1.use_count() << endl; // 1
 
-    std::shared_ptr<Widget> sh_pt_1(new Widget{});
-    sh_pt_1->process();
+    widget1->processWidget(); // 2
+    
 
-    std::shared_ptr<Widget> sh_pt_2(sh_pt_1);
-    cout << "hailn4" << endl;
-    sh_pt_2->process();
+    std::shared_ptr<Widget> widget2(widget1);
+    cout << "widget2: " << widget1.use_count() << endl; // 4
 
-    cout << "int fact: " << sh_pt_2.use_count() << endl;
+    widget2->processWidget(); // 4
 
-    std::shared_ptr<Widget> sh_pt_3(sh_pt_1);
-    cout << "hailn4" << endl;
-    sh_pt_3->process();
+    std::shared_ptr<Widget> widget3(widget1);
+    cout << "widget3: " << widget1.use_count() << endl; // 5
 
-    cout << "int fact: " << sh_pt_2.use_count() << endl;
+    widget3->processWidget(); // 6
 
-    return 0;
+    return 0;
 }
 
-output:
-default contructor
+Widget created
+widget1: 1
 inside vector: 1
-hailnm4
-inside vector: 1
-inside vector: 1
-int fact: 2
-hailnm4
+widget2: 2
 inside vector: 1
 inside vector: 1
+widget3: 3
 inside vector: 1
-int fact: 3
-destructor
-destructor
-destructor
-destructor
+inside vector: 1
+inside vector: 1
+Widget destroyed
+Widget destroyed
 
-chỗ này là vì nó coi this là raw pointer, và khi truyền vào vector, nó tạo ra 1 share pointer khác trong vector từ this -> có 1 control block khác
-mới luôn, nên nhìn thấy count luôn bằng 1 trong vector, lúc hủy cũng có tận 4 thằng: 1 thằng ban đầu và 3 thằng create ra trong vector
+chỗ này là vì nó coi this là raw pointer, và khi đẩy vào vector, nó tạo ra 1 share pointer khác trong vector từ this -> có 1 control block khác
+mới luôn, nên nhìn thấy count luôn bằng 1 trong vector, 
+còn về việc hủy object thì như nào, bản chất lúc này luôn chỉ có 1 object được tạo ra
+trong vector đã tạo ra 3 share_pointer khác nhau nhưng đều từ cùng 1 con trỏ this, nghĩa là từ cùng 1 object ban đầu
+ -> object Widget thì chỉ có 1, mà lúc hủy cả 4 thằng share pointer đều có hủy cùng 1 object nên sẽ gây ra undefine behavior
+    có thể destroy 1 lần rồi crash, có thể nhiều lần rồi crash...
 
 phải dùng như sau:
 class mclass : public std::enable_shared_from_this<Widget> {
 ...
 }
-    void process(){
-        processedWidgets.emplace_back(shared_from_this());
-    }
--> nó tạo share pointer trong vector và nó đồng bộ với share pointer bên ngoài vector luôn, chung control block
-default contructor
-inside vector: 2
-hailnm4
-inside vector: 4
-inside vector: 4
-int fact: 4
-hailnm4
-inside vector: 6
-inside vector: 6
-inside vector: 6
-int fact: 6
-destructor
+process(){
+    processedWidgets.emplace_back(shared_from_this());
+}
 
-có thể thấy chỉ có 1 destructor, và ref count là luôn x đôi kìa
+nó tạo share pointer trong vector và nó đồng bộ với share pointer bên ngoài vector luôn, chung control block
+widget1: 1
+inside vector: 2
+widget2: 3
+inside vector: 4
+inside vector: 4
+widget3: 5
+inside vector: 6
+inside vector: 6
+inside vector: 6
+Widget destroyed
+
+có thể thấy chỉ có 1 destructor, và luôn chỉ có 1 control block, -> correct implementation
 
 /*------------------------------------------------------------------------------------------------------------------------*/
 
@@ -396,10 +437,10 @@ nó vào mã mà ko phải là gọi hàm,  còn constexpr function thì nó là
 
 return void
 
-return giá trị thì nó sẽ create ra đối tượng tạm thời để lưu cái giá trị đó rồi sau đó sẽ destroy cái đối tượng đó luôn, mà bh complier nó tối ưu nó dùng cơ chế m chứ 
+return giá trị thì nó sẽ create ra đối tượng tạm thời để lưu cái giá trị đó rồi sau đó sẽ destroy cái đối tượng đó luôn, mà bh complier nó tối ưu nó dùng cơ chế move chứ 
 không thấy cần tạo đối tượng tạm nữa
 
-return con trỏ hoặc return tham chiếu cần chú ý cái đối tượng mình chọc vào, là biến cục bộ thì oẳng chó
+return con trỏ hoặc return tham chiếu cần chú ý cái life time của đối tượng mình chọc vào, là biến cục bộ thì oẳng chó
 
 chú ý khi return về kiểu tham chiếu thì đừng nhìn thấy symbol & mà nói là địa chỉ nhé, ví dụ tham chiếu của 1 biến int khác hoàn toàn với địa chỉ của 1 biến int
 
@@ -409,8 +450,6 @@ x này vẫn là kiểu int             x này là kiểu int* mẹ rồi
 ==================================================================================================================================================================
 
 STATIC DISPATH, DYNAMIC DISPATH trong c++
-
-mình nghĩ sẽ clean: cái vpointer được tạo ra ở private của mỗi class đo đó dùng vtable là khác nhau trỏ đến vtable khác nhau đối với mỗi clas -> nó phải như vậy
 
 (link xịn: https://cppdeveloper.com/c-nang-cao/virtual-tables-vtable-trong-c/)
 
@@ -444,13 +483,16 @@ method1();
 A* = new B();
 A->method1();
 
--> nếu compiler nó áp dụng static dispath vào đây, nghĩa là nó xác định địa chỉ của hàm A::method1 luôn từ lúc biên dịch, thì chỗ này hàm A::method1 phải được chạy, nhưng rõ ràng ở đây là đã chạy hàm B::method1 -> chương trình đã phải tìm địa chỉ của hàm cần chạy ở runtime, và do đó, quá trình này được gọi là dynamic dispath
+-> nếu compiler nó áp dụng static dispath vào đây, nghĩa là nó xác định địa chỉ của hàm A::method1 luôn từ lúc biên dịch, thì chỗ này hàm A::method1 phải được chạy, nhưng rõ ràng ở đây
+là đã chạy hàm B::method1 -> chương trình đã phải tìm địa chỉ của hàm cần chạy ở runtime, và do đó, quá trình này được gọi là dynamic dispath
 
 - bây giờ là đến thằng vtable hay đầy đủ là virtual table: có thể coi thằng vtable này là mảng con trỏ hàm nhỉ , là nó đó ???
 
-khi biên dịch code, với mỗi class mà có chứa virtual method thì nó sẽ tạo ra 1 cái gọi là virtual table, tỉ như ex trên thì nó sẽ tạo ra 2 vtable cho 2 class là A và B, vì class B public lại class A và define lại cái hàm  method1 nên dù mình k có từ khóa virtual ở đó thì nó vẫn là virtual method bình thường thôi.
+khi biên dịch code, với mỗi class mà có chứa virtual method thì nó sẽ tạo ra 1 cái gọi là virtual table, tỉ như ex trên thì nó sẽ tạo ra 2 vtable cho 2 class là A và B, 
+vì class B public lại class A và define lại cái hàm  method1 nên dù mình k có từ khóa virtual ở đó thì nó vẫn là virtual method bình thường thôi.
 
-- thì cái vtable nó sẽ lưu địa chỉ của các hàm virtual mà có thể được gọi thông qua đối tượng của class đó, các phần tử của vtable có thể trỏ đến địa chỉ của hàm virtual mà được định nghĩa bởi chính class đó, hoặc trỏ đến hàm virtual của class cha nếu bản thân nó k override lại
+- thì cái vtable nó sẽ lưu địa chỉ của các hàm virtual mà có thể được gọi thông qua đối tượng của class đó, các phần tử của vtable có thể trỏ đến địa chỉ của hàm virtual mà được 
+định nghĩa bởi chính class đó, hoặc trỏ đến hàm virtual của class cha nếu bản thân nó k override lại
 
 theo ex bên trên, nó sẽ tạo ra 2 vtable riêng cho class A và class B
 
@@ -462,32 +504,32 @@ vtable được tạo ra ở class con là B cũng có 2 con trỏ hàm 1 trỏ 
 
 - tiếp tục là đến thằng Vpointer: là 1 biến thành viên của class thôi, ơ mà được tạo ngầm đấy, không nhìn thấy đâu :))
 
-là như sau: khi biên dịch chương trình, thì class có virtual method thì compiler nó tạo ra 1 vtable cho class đó, đồng thời là nó cũng tạo thêm 1 biến thành viên cho class là vpointer, đồng nghĩa với việc mỗi object được tạo ra sẽ có 1 biến vpoiner như bao biến khác, làm tăng size của object thêm sizeof(vpointer) bytes -> 8bytes vì size của con trỏ luôn bằng 8
+là như sau: khi biên dịch chương trình, thì class có virtual method thì compiler nó tạo ra 1 vtable cho class đó, đồng thời là nó cũng tạo thêm 1 biến thành viên cho class là vpointer, 
+đồng nghĩa với việc mỗi object được tạo ra sẽ có 1 biến vpoiner như bao biến khác, làm tăng size của object thêm sizeof(vpointer) bytes -> 8bytes vì size của con trỏ luôn bằng 8
 
 vtable là 1 cái mà program nó tạo ra cho vpointer cuả class trỏ tới, chứ nó k nằm trong class, nó có mỗi liên hệ mật thiết với class chứ k phải là của hay là nằm trong class
 
-và đây là cách mà dynamic static hoạt động: trong runtime, 1 lời gọi đến 1 hàm ảo trên 1 đối tượng thì vpointer của đối tượng đó sẽ được sử dụng để tìm vtable tương ứng của class, sau đó trỏ tới đúng function cần gọi
+và đây là cách mà dynamic static hoạt động: trong runtime, 1 lời gọi đến 1 hàm ảo trên 1 đối tượng thì vpointer của đối tượng đó sẽ được sử dụng để tìm vtable tương ứng của class, 
+sau đó trỏ tới đúng function cần gọi
 
 -> note: vpointer thường được tạo ra ở private của class, nên mình sẽ thiên về việc hiểu mỗi 1 class sẽ có 1 vpointer riêng 
 => trả lời câu hỏi, 1 class có virtual function thì size ít nhất bằng 8, vì nó tồn tại ít nhất 1 biến thành viên là vpointer
 
-- Vậy, đã có vài lần build mà bị bệnh là undefined reference to `vtable for MethodXXX
-
-có nghĩa là sao nhỉ ? 1 là thằng vpointer hỏng 2 là thằng phần tử bên trong vtable trỏ đến hàm MethodXXX hỏng
-
-thế lỗi "undefined reference to `vtable for MethodXXX" thì cuối cùng là lỗi do vpointer không trỏ được đến vtable hay do thằng phần tử của vtable k trỏ được đến hàm hay trình biên dịch fail hay như thế nào nhỉ :))
+- Vậy, đã có vài lần build mà bị bệnh là undefined reference to `vtable for MethodXXX -> thì vẫn là ko định nghĩa hàm thôi
 
 ==================================================================================================================================================================
 
 CLASS 
 
-- class như 1 cái bộ khung thôi, khi tạo xong 1 cái class thì cũng k có vùng nhớ hay gì cấp phát đi đâu cả, nó là 1 cái bộ khung chung để xây dựng nên các object thôi, giống kiểu bản vẽ nhà 3d với việc xây dựng lên ngồi nhà ấy thật sự vậy !
+- class như 1 cái bộ khung thôi, khi tạo xong 1 cái class thì cũng k có vùng nhớ hay gì cấp phát đi đâu cả, nó là 1 cái bộ khung chung để xây dựng nên các object thôi, giống kiểu bản vẽ
+nhà trên giấy với việc xây dựng lên ngồi nhà ấy thật sự vậy !
 
 4 tính chất: đa hình, kế thừa, đóng gói, trừu tượng
 nói về kế thừa và đa hình:
 kế thừa: thì sẽ có 3 kiểu kế thừa luôn, là public, private, protected, 3 cái phạm vi truy cập cho các thành phần được kế thừa trong class con
 
-phạm vi private của 1 class là bảo vệ, nghĩa là không thể truy xuất nó từ bên ngoài class, do đó kế thừa thì cũng k thể truy xuất được tại class con , nhưng có thể sử dụng bằng cách làm cái function get nó tại class base, dùng tại class con thì ok
+phạm vi private của 1 class là bảo vệ, nghĩa là không thể truy xuất nó từ bên ngoài class, do đó kế thừa thì cũng k thể truy xuất được tại class con , 
+nhưng có thể sử dụng bằng cách làm cái function get nó tại class base, dùng tại class con thì ok
 
 public: public->public, protected->protected, 
 protected: public, protected -> protected 
@@ -499,7 +541,8 @@ và sẽ có 2 kiểu đa hình: tĩnh - compiler time, động - runtime
 đa hình tĩnh chính là việc nạp chồng hàm trong trong class
 đa hình động là cách dùng virtual đấy
 
-- 1 con trỏ lớp cha luôn có thể trỏ  đến 1 đối tượng lớp con, cái việc dùng con trỏ là muốn thao tác với giá trị, hay là cái vùng nhớ, hay là cái dữ liệu mà con trỏ nó trỏ vào, nhưng ở đây nếu k dùng đa hình
+- 1 con trỏ lớp cha luôn có thể trỏ  đến 1 đối tượng lớp con, cái việc dùng con trỏ là muốn thao tác với giá trị, hay là cái vùng nhớ, hay là cái dữ liệu mà con trỏ nó trỏ vào, 
+nhưng ở đây nếu k dùng đa hình thì
 
 - VIRTUAL METHOD
 class A;
@@ -540,7 +583,8 @@ A() : x{9}
 }
 -> cũng là khởi tạo x = 9 y như bên trên
 
-ví dụ class có 1 member là const int chẳng hạn, thì phải khởi tạo giá trị ngay chứ k thể khai báo rồi để đấy, nếu k dùng initializer lists thì all object của class đều có 1 biến const int đó với giá trị giống nhau, chẳng thà đặt static mẹ đi, cơ mà mình muốn mỗi object có 1 const int đó với giá trị khác nhau, lúc này cần dùng initializer lists rồi
+ví dụ class có 1 member là const int chẳng hạn, thì phải khởi tạo giá trị ngay chứ k thể khai báo rồi để đấy, nếu k dùng initializer lists thì all object của class đều có 1 biến 
+const int đó với giá trị giống nhau, chẳng thà đặt static mẹ đi, cơ mà mình muốn mỗi object có 1 const int đó với giá trị khác nhau, lúc này cần dùng initializer lists rồi
 
 class A{
 public:
@@ -554,13 +598,14 @@ const int mx;
 rõ ràng mỗi 1 lần create ra 1 object of A thì sẽ sử dụng được 1 giá trị mx khác nhau, lưu ý chỗ này là tạo ra rồi thì không có thay đổi được nữa đâu
 - trình tự khởi tạo các data member không phụ thuộc vào thứ tự chô mem list init, mà phụ thuộc vào lúc mình khai báo cái biến thành viên đó, từ trên xuống từ trái sang phải !
 
-- nếu có biến thành viên là tham chiếu, kiểu int& ma, bản chất tham chiếu là phải khởi tạo chứ k thể khai báo xong để đó, nếu khi instance 1 object nó sẽ lỗi ngay, nhưng dùng member initializer lists
-thì nó lại hợp lý luôn, ngon lành, và phải đảm bảo được vòng đời của biến nó refer tới
+- nếu có biến thành viên là tham chiếu, kiểu int& ma, bản chất tham chiếu là phải khởi tạo chứ k thể khai báo xong để đó, nếu khi instance 1 object nó sẽ lỗi ngay, nhưng dùng 
+member initializer lists thì nó lại hợp lý luôn, ngon lành, và phải đảm bảo được vòng đời của biến nó refer tới
 
 - CONSTRUCTOR của class thì như nào !
 -> quyết định xem liệu object có được tạo hay không, k có contructor nào phù hợp thì k tạo được object
 
-vài loại như sau: constructor mặc định (có define hoặc ẩn), constructor có tham số, copy constructor (có define hoặc ẩn) và move constructor, cũng có thể nạp chồng constructor bình thường vì đơn giản khi đó là có nhiều cách để tạo ra object !
+vài loại như sau: constructor mặc định (có define hoặc ẩn), constructor có tham số, copy constructor (có define hoặc ẩn) và move constructor, cũng có thể nạp chồng constructor 
+bình thường vì đơn giản khi đó nghĩa là có nhiều cách để tạo ra object !
 
 nói về copy constructor đi: sẽ được sử dụng khi ta gán 1 object cho 1 object, ví dụ
 class A{
@@ -571,17 +616,19 @@ int* p;
 
 A x; // gọi constructor default để create x
 A y = x; // gọi copy constructor default
-hiện tại thì thấy k sao đúng ko, vì build và run bình thường, nhưng khổ 1 chỗ, default copy contructors hiểu nôm na nó sẽ nhân bản thằng y từ thằng x, vậy nó sẽ nhân bản ra 2 con trỏ int* p khác nhau đúng ko, nhưng khổ 1 cái, vùng nhớ mà nó trỏ vào thì k có tự nhân bản ra được
-nó vẫn là 2 con trỏ khác nhau đấy nhưng bây giờ dùng chung 1 vùng nhớ,nên sau đó sẽ phải tách ra bằng cách cho 1 trong 2 nó trỏ đi chỗ khác là xong, hoặc làm điều đó ngay khi khởi tạo đối tượng bằng copy constructor -> ĐÚNG
+hiện tại thì thấy k sao đúng ko, vì build và run bình thường, nhưng khổ 1 chỗ, default copy contructors hiểu nôm na nó sẽ nhân bản thằng y từ thằng x, vậy nó sẽ nhân bản ra 2 con trỏ 
+int* p khác nhau đúng ko, nhưng khổ 1 cái, vùng nhớ mà nó trỏ vào thì k có tự nhân bản ra được
+nó vẫn là 2 con trỏ khác nhau đấy nhưng bây giờ dùng chung 1 vùng nhớ,nên sau đó sẽ phải tách ra bằng cách cho 1 trong 2 nó trỏ đi chỗ khác là xong, hoặc làm điều đó ngay khi 
+khởi tạo đối tượng bằng copy constructor -> ĐÚNG
 
--> giải quyết nó bằng cách sử dụng copy constructor mình define ra: A(const A& x){x.ptr = new int();} -> ok, sẽ không bị dùng chung 1 vùng nhớ nữa
+-> giải quyết nó bằng cách sử dụng copy constructor mình define ra: A(const A& x){this->ptr = new int(); *(this->ptr) = *(x.ptr);} -> đây ok
 A y = x; lúc này sẽ create đối tượng bằng cách gọi A(const A& x) <=> y.A(x) [khởi tạo y từ x]
 
 NOTE: nếu không define copy contructor, biến k phải con trỏ sẽ bình thường(được gán giá trị luôn), biến con trỏ sẽ bị chung chạ như giải thích ở trên,
 còn 1 khi đã define copy contructor, muốn làm gì thì phải làm trong hàm, nếu ko biến sẽ k tự động gán, con trỏ sẽ trỏ vào 1 nơi k xác định 
-- nếu đã define move contructor thì bắt buộc phải define copy contructor
 
-- có thể sử dụng constructors của lớp base bằng cách gọi nó ở vị trí member initializer lists, nếu không, khi khởi tạo thằng con, sẽ mặc định chỉ gọi default constructor của thằng base, nên dùng khi nào, khi cần khởi tạo các biến được delecare trong class cha, trách việc phải khởi tạo lại ở class con thôi !
+- có thể sử dụng constructors của lớp base bằng cách gọi nó ở vị trí member initializer lists, nếu không, khi khởi tạo thằng con, sẽ mặc định chỉ gọi default constructor của thằng base, 
+nên dùng khi nào, khi cần khởi tạo các biến được delecare trong class cha, trách việc phải khởi tạo lại ở class con thôi !
 class A{
 public:
 A(){}
@@ -604,7 +651,8 @@ A a(0); sẽ hiểu như sau: a.A(0){a.this->x =0;}
 
 - hàm bạn - function friend, class bạn - class friend, hàm thành viên là bạn
 
-- Move constructor : đoạn này hơi ảo ảo ! 
+- Move constructor : đoạn này hơi ảo ảo ! - chả có mẹ gì ảo, tự đi mà define cho đúng mindset của move semantic thôi
+
 CHÚ Ý: 1 cái vùng nhớ sẽ có 1 cái biến, hay là 1 cái expression đại diện cho vùng nhớ đó để chương trình có thể quản lý được cái vùng nhớ đó, tỷ như :
 int global;
 int main(){int n; return 0;}
@@ -650,7 +698,8 @@ public:
 A returnA(){
     A n;
     return A() hoặc return n đều như nhau
--> bởi vì return A() hay n đều là return về 1 giá trị của 1 object kiểu A, khi này chương trình sẽ tạo ra 1 cái định danh, hay gọi là 1 name tạm nào đấy quản lý cái vùng nhớ tạm chứa cái giá trị được return về !
+-> bởi vì return A() hay n đều là return về 1 giá trị của 1 object kiểu A, khi này chương trình sẽ tạo ra 1 cái định danh, hay gọi là 1 name tạm nào đấy quản lý cái vùng nhớ tạm 
+chứa cái giá trị được return về !
 -> và đây là return về 1 rvalue 
 }
 
@@ -662,16 +711,23 @@ int main (){
 }
 
 ta sẽ thấy lúc này chương trình nó đã sử dụng 1 cơ chế như là std::move vây ý, in log sẽ thấy, nếu ở main chỉ viết là return A()
-, thì rõ ràng nó đã contructors ở function returnA và kết thúc hàm nó destroy cái đối tượng đó(mean destroy cái vùng nhớ đó), nhưng nếu viết như bên trên, A n = returnA(); -> vẫn sẽ là contructor 1 cái object từ function returnA này, nhưng sau đó k hề có copy contructor hay là move contructor để cretae ra object n nữa, ta cũng k hề thấy có object nào bị destroy đi, thế có nghĩa là, nó đã move cái vùng nhớ của object tạm được cretae ra ở function r trực tiếp sang cho thằng object n, hoặc hiểu là move cái định danh n đến cái vùng nhớ đó , và vòng đời của nó sẽ gán với n, nên ta sẽ k thấy có object nào bị destroy ở đây cả
+, thì rõ ràng nó đã contructors ở function returnA và kết thúc hàm nó destroy cái đối tượng đó(mean destroy cái vùng nhớ đó), nhưng nếu viết như bên trên, A n = returnA(); 
+-> vẫn sẽ là contructor 1 cái object từ function returnA này, nhưng sau đó k hề có copy contructor hay là move contructor để cretae ra object n nữa, 
+ta cũng k hề thấy có object nào bị destroy đi, thế có nghĩa là, nó đã move cái vùng nhớ của object tạm được cretae ra ở function r trực tiếp sang cho thằng object n, 
+hoặc hiểu là move cái định danh n đến cái vùng nhớ đó , và vòng đời của nó sẽ gán với n, nên ta sẽ k thấy có object nào bị destroy ở đây cả
 
--> TÓM LẠI: thấy, sau 1 hồi check, mình thấy move constructor hay copy contructor khác nhau mỗi chỗ là nó sẽ tiết kiệm quá trình gán giá trị, thay vì copy từ chỗ này sang chỗ khác, thì nó trỏ luôn tới đó ! ,refer lại cái cơ chế bên trên
+-> TÓM LẠI: thấy, sau 1 hồi check, mình thấy move constructor hay copy contructor khác nhau mỗi chỗ là nó sẽ tiết kiệm quá trình gán giá trị, thay vì copy từ chỗ này sang chỗ khác, 
+thì nó trỏ luôn tới đó ! ,refer lại cái cơ chế bên trên
 
-- tưởng tượng như có 2 con trỏ, con trỏ 1 trỏ tới 1 mảng chưa có gì, con trỏ 2 trỏ tới 1 mảng nhiều phần từ, h nếu copy thì có nghĩa là copy từng phần tử từ mảng 2 -> 1, mất thời gian, move thì nó sẽ move luôn vùng nhớ của con trỏ 1 tới chỗ con trỏ 2, thành ra vẫn là 2 con trỏ trỏ cùng 1 vùng nhớ
+- tưởng tượng như có 2 con trỏ, con trỏ 1 trỏ tới 1 mảng chưa có gì, con trỏ 2 trỏ tới 1 mảng nhiều phần từ, h nếu copy thì có nghĩa là copy từng phần tử từ mảng 2 -> 1, 
+mất thời gian, move thì nó sẽ move luôn vùng nhớ của con trỏ 1 tới chỗ con trỏ 2, thành ra vẫn là 2 con trỏ trỏ cùng 1 vùng nhớ
 -> sẽ dùng copy contructor nếu y =x mà gán xong rồi nhưng lại vẫn muốn dùng thằng x;
 
-sẽ dùng move contructor nếu y = x và gán xong rồi k cần thằng x nữa, phải có step là gán x về null nếu trong x có con trỏ, nếu k sẽ bị 2 con trỏ trỏ cùng tới 1 vùng nhớ đó -> nói rồi, chỉ khác nhau ở hiệu suất chạy thôi
+sẽ dùng move contructor nếu y = x và gán xong rồi k cần thằng x nữa, phải có step là gán x về null nếu trong x có con trỏ, 
+nếu k sẽ bị 2 con trỏ trỏ cùng tới 1 vùng nhớ đó -> nói rồi, chỉ khác nhau ở hiệu suất chạy thôi
 
-clean: nghĩa là áp dụng trong class thì hoàn toàn là do mình define nó ntn, move thì mình sẽ cho thằng mình đang tạo trỏ đến thằng kia, rồi cho thằng kia null, chứ nếu trong hàm move mà mình gán giá trị như bình thường thì chả khác 
+clean: nghĩa là áp dụng trong class thì hoàn toàn là do mình define nó ntn, move thì mình sẽ cho thằng mình đang tạo trỏ đến thằng kia, rồi cho thằng kia null, 
+chứ nếu trong hàm move mà mình gán giá trị như bình thường thì chả khác 
 
 
 - Operator Overloading in C++
@@ -687,14 +743,25 @@ int main (){
 }
 
 - Đặc biệt: overloading toán tử << và >> 
-mình không thể viết kiểu này được:
+mình có thể viết kiểu này được:
     A operator << (type st){
         LOG << "operator++";
         return *this;
     }
--> A a; a << st tương đương với a.operator<<(st) -> HOÀN TOÀN SAI
-vì sao: vì ở đây << nó là toán tử được overloading cho cout cin rồi, mặc định nó sẽ dùng để in được những kiểu dữ liệu có sẵn, bây giờ mình muốn in ra như thế nào thì mình overload lại,
-nghĩa là mình overloading lại toán tử <<, >> của thằng cout cin cho nó có thể in ra cái đối tượng của mình
+-> A objA; objA << st tương đương với objA.operator<<(st) -> HOÀN TOÀN HỢP LỆ
+
+CÁI ĐẶC BIỆT Ở ĐÂY LÀ GÌ ?
+là khi muốn dùng kiểu std::cout << objA hay std::cin >> objA
+
+thì định nghĩa như sau sẽ SAI :
+class A {
+public:
+    std::ostream& operator<<(std::ostream& os);
+};
+với std::cout << objA thì nó sẽ hiểu là std::cout.operator<<(objA) -> SAI
+vì sao ? vì operator<< của std::cout nó đã được định nghĩa sẵn rồi, nó chỉ nhận vào những kiểu dữ liệu có sẵn như int, double, string...
+nếu muốn dùng được std::cout << objA thì phải định nghĩa lại operator<< của cout để nó có thể nhận vào kiểu dữ liệu của objA, nghĩa là phải overload lại operator<< 
+của cout cho kiểu dữ liệu của objA
 
 - NHÂN TIỆN: THIS POINTER
 các hàm operator overload mà không có return cái gì để nó auto return giá trị rác về là oẳng !
@@ -794,7 +861,11 @@ int main(){
     return 0;
 }
 
-- không thể khởi tạo trực tiếp biến thành viên không tĩnh của class base ở constructor của class con vì, ở 1 constructor thông thường k có ủy quyền, thứ tự khởi tạo sẽ là khởi tạo base, khởi tạo các member không tĩnh, chạy thân hàm -> base khởi tạo nó cũng khởi tạo member của nó -> con k thể khởi tạo lại, -> chỉ có thể dùng ủy quyền
+- không thể khởi tạo trực tiếp biến thành viên không tĩnh của class base ở constructor của class con vì, 
+Trong C++, mỗi constructor chỉ trực tiếp khởi tạo được:
+- direct base classes của chính class đó
+- non-static data members của chính class đó
+Tức là constructor của class con chỉ được viết kiểu: Derived() : Base(...), member_of_derived(...) {}
 
 class Base{
 public:
@@ -820,7 +891,7 @@ explicit Child(int x) : Base{x} {}, vậy thì bây giờ trên class phải có
 FUNCTOR - function object là việc mình đi overload toán tử ()
 
 template <typename T>
-struct Chaelisa{
+struct MStruct{
     T ma;
     void operator()(T x){
         QDEBUG << x*x << " ";
@@ -829,15 +900,13 @@ struct Chaelisa{
 
 int main(){
 
-    Chaelisa<int> chli;
-    chli.ma = 9;
-    QDEBUG << chli.ma;
-    chli(9); // chính là functor <-> chli.operator()(9) -> không phải là function
+    MStruct<int> mstruct;
+    mstruct.ma = 9;
+    QDEBUG << mstruct.ma;
+    mstruct(9); // chính là functor <-> mstruct.operator()(9) -> không phải là function
 
     return 0;
 }
-
-STL- https://www.geeksforgeeks.org/the-c-standard-template-library-stl/
 
 1. generic programming with marcos
 
@@ -866,13 +935,14 @@ T max(T a, T b){
 return a>b?a:b;
 }
 
--> complier complier it ok, nhưng mà nó không gen ra bất kì code nào cả, nó chỉ đơn giản là 1 template, nó sẽ không gen ra code cho đến khi nào users chỉ định 1 version cụ thể cho template đó
+-> compiler it ok, nhưng mà nó không gen ra bất kì code nào cả, nó chỉ đơn giản là 1 template, nó sẽ không gen ra code cho đến khi nào users chỉ định 1 version cụ thể cho template đó
 
 - có thể sử dụng class thay cho typename -> template<class T>
 
 int a,b;
 first use: max<int>(a,b);
 second use: just can max(a,b) cho dù type k phải là int nữa, nó vẫn sẽ ngầm hiểu
+
 double c, d;
 then just call max(c,d)
 
@@ -884,15 +954,44 @@ std::cout << a << b;
 }
 
 3. generic programming with class templates
-same above !
+Class template cho phép tạo một lớp tổng quát, dùng với nhiều kiểu dữ liệu khác nhau
+template<typename T>
+class Box {
+private:
+    T value;
+public:
+    Box(T v) : value(v) {}
+
+    T getValue() {
+        return value;
+    }
+};
+
+ví dụ
+Box<int> b1(10);
+Box<double> b2(3.14);
+Box<std::string> b3("hello");
+thì Compiler sẽ tạo ra 3 class Box<int> ; Box<double> ; Box<std::string>
 
 4. creating a generic array template class
-
 template<typename T, int N>
-class A{
-T size {N};
-T array[N];
-}
+class A {
+private:
+    T array[N];
+
+public:
+    int size() const {
+        return N;
+    }
+
+    T& operator[](int index) {
+        return array[index];
+    }
+
+    const T& operator[](int index) const {
+        return array[index];
+    }
+};
 
 A<int, 10> a; -> template N, nó sẽ nhận giá trị n = 10, T là kiểu int
 
@@ -900,47 +999,17 @@ A<int, 10> a; -> template N, nó sẽ nhận giá trị n = 10, T là kiểu int
 
 - khi lưu trữ 1 object trong containers, nó sẽ make ra 1 bản sao của objetc chứ k đặt luôn cái object của mình vào trong container đâu (với all type luôn)
 
-- các function hay dùng: 
-size: return số lượng phần tử của container 
-empty: return true or false nếu container empty or not
-insert: chèn 1 phần tử tới container -> make a copy object của mình rồi chèn vào container
-operator<, operator<=, operator>, operator>= : so sánh contents của 2 containers
-operator==, operator!=: so sánh contents của 2 containers bằng nhau hay ko
+Container	        Cấu trúc	    Tìm kiếm	            Chèn	                        Sửa                     Xóa	                                            Truy xuất
+std::array	        mảng tĩnh	    O(n)	                không có	                    O(1) theo index	        không có	                                    O(1) theo index
+std::vector	        mảng động	    O(n),sort - O(log n)	cuối: O(1) amortized, 	        O(1) theo index	        cuối: O(1), giữa/đầu: O(n)	                    O(1) theo index
+                                                            giữa/đầu: O(n)
 
-swap: swap 2 phần tử của container
-erase: xóa element(s) của containers
-clear: xóa all element
-begin and and: trả về trình lặp trỏ đến phần tử đầu hoặc cuối
-rbegin and rend: trả về trình lặp ngược trỏ đến phần tử cuối hoặc đầu tiên
-cbegin, cend: trình lặp hằng trỏ đến .....
-crbegin, vrend: ..............
+std::list	        linked list đôi	O(n)	                biết vị trí: O(1)	            O(1) nếu có iterator	biết vị trí: O(1)	                            O(n)
+std::map	        cây cân bằng	O(log n)	            O(log n)	                    O(log n) để tìm,	    O(log n)	                                    O(log n) theo key
+                                                                                            sửa xong giá trị là O(1)
 
-- CHÚ Ý: toán tử phải được hỗ trợ bởi object 
+std::unordered_map	hash table	    average O(1)	        average O(1)	                average O(1)	        average O(1)	                                average O(1) theo key
 
-6. introduction to STL  Iterators
-
-- nó như con trỏ để mà dùng ở trong container thôi
-std::vector<int>::iterator it1; -> chỉ dùng trong vector int
-std::list<std::string>::iterator it2; -> chỉ dùng trong list có phần tử là std::string
-std::map<std::string, std::string>::iterator it3; -> chỉ dùng trong map có phần tử là std::string pair với st::string
-
-ví dụ: std::vector<int> vec {1,2,3}; vec.begin là thằng 1, nhưng vec.end là thằng sau thằng 3 chứ k phải thằng 3
-
-7. introduction to SLT algorithms
-
-find(begin, end, element) // need to provide operator==
-for_each()
-
-8. std::array
-9. std::vector
-10. std::deque, std::queue, std::priority_queue
-11. std::list
-12. std::map
-13. std::stack
-
--> https://en.cppreference.com/w/
-
-File and Stream: https://www.geeksforgeeks.org/file-handling-c-classes/
 
 ==================================================================================================================================================================
 
@@ -948,7 +1017,9 @@ File and Stream: https://www.geeksforgeeks.org/file-handling-c-classes/
 Tóm tắt trước: mọi thứ nên check ở cpp, vì ở cpp include .h thì mới được tính có khai báo, file .h chỉ là để cho gọn gẽ để include vào trong .cpp thôi
 liên kết là một thuộc tính của một định danh (không phải của một biến)
 
-- định danh có 1 thuộc tính khác có tên là liên kết, có nghĩa là nó sẽ xác định xem các khai báo khác của tên đó có tham chiếu đến cùng 1 đối tượng hay không, kiểu là khai báo tên như thế nhưng có phải chiếu đến cùng 1 đối tượng, 1 vùng nhớ hay không hay không, nếu không thì sẽ có chuyện liên quan đến phạm vi của biến
+- định danh có 1 thuộc tính khác có tên là liên kết, có nghĩa là nó sẽ xác định xem các khai báo khác của tên đó có tham chiếu đến cùng 1 đối tượng hay không, 
+kiểu là khai báo tên như thế nhưng có phải chiếu đến cùng 1 đối tượng, 1 vùng nhớ hay không hay không, nếu không thì sẽ có chuyện liên quan đến phạm vi của biến
+
 - biến cục bộ không có liên kết, nghĩa là mỗi khai báo sẽ chỉ tham chiếu đến 1 đối tượng duy nhất
 
 ví dụ:
@@ -972,7 +1043,9 @@ int main()
 - về phạm vi của biến: trong 1 block, trong 1 file, trong 1 chương trình(gồm nhiều file) -> thì trong mỗi phạm vi đều phải tuân theo quy tắc 1 định nghĩa
 -> các biến sẽ bị lỗi multi define or redefine nếu trùng tên trong cùng 1 phạm vi
 
-- các object và function NỘI BỘ thì được xác định trong các file khác nhau là khác nhau, được coi là các thực thể độc lập, việc này thì cần nhìn xem nó có liên kết là internal linkage hay external linkage, nếu là external linkage thì nó sẽ được nhìn thấy ở nhiều file độc lập trong cùng 1 chương trình mà không cần include gì cả
+- các object và function NỘI BỘ thì được xác định trong các file khác nhau là khác nhau, được coi là các thực thể độc lập, 
+việc này thì cần nhìn xem nó có liên kết là internal linkage hay external linkage, nếu là external linkage thì nó sẽ được nhìn thấy ở nhiều file độc lập trong cùng 1 chương trình 
+mà không cần include gì cả
 
 ví dụ: 2 file a.cpp và b.cpp cùng trong 1 project
 file a.cpp: static int g_x;
@@ -988,20 +1061,28 @@ bởi vì default của global là external, nó có thể được nhìn thấy
 
 - từ khóa extern sẽ tạo liên kết external cho định danh, nếu nó là external linkage rồi công dụng từ khóa này bị ignore đơn giản vì lúc này nó vô dụng
 
-- Để dử dụng 1 biến toàn từ ở 1 file khác, cần 1 khai báo chuyển tiếp
-- việc khai báo chuyển tiếp được thực hiện thông qua từ khóa extern(k có giá trị khở tạo)
+- Để dử dụng 1 biến global ở 1 file khác, cần 1 khai báo chuyển tiếp
+- việc khai báo chuyển tiếp được thực hiện thông qua từ khóa extern(k có giá trị khởi tạo)
 
 ví dụ:
 file a.cpp khai báo biến global là int g_x = 10;
-file b.cpp muôn dùng nó thì cần extern int g_x; -> nói rằng đây là 1 khai báo chuyển tiếp cho thằng g_x đã tồn tại, nghĩa là thằng g_x này sẽ tham chiếu đến thằng g_x đã tồn tại trước đó ở đâu đó
--> include thì lại ăn redefine hay : hãy hiểu đơn giản lại về việc include là làm gì
+file b.cpp muốn dùng nó thì cần extern int g_x; -> nói rằng đây là 1 khai báo chuyển tiếp cho thằng g_x đã tồn tại, nghĩa là thằng g_x này sẽ tham chiếu đến thằng g_x 
+đã tồn tại trước đó ở đâu đó
+-> include thì lại ăn redefine hay : hãy hiểu đơn giản lại về việc include là làm gì :
+
+như nào thì bị redefine ? 
+a.h: int global;
+a.cpp: #include "a.h"
+b.cpp: #include "a.h" -> sẽ có dòng int global; ở cả a.cpp và b.cpp -> multi define
+
+fix:
+a.h: extern int global; -> chỉ là khai báo chuyển tiếp, không có giá trị khởi tạo
+a.cpp: #include "a.h", và định nghĩa int global -> định nghĩa biến global
+b.cpp: #include "a.h"
 
 - hàm thì không dùng từ khóa extern, nó sẽ hiểu là khai báo chuyển tiếp hay hàm mới thông qua việc mình có define thân hàm ko
-- phạm vi file(được nhìn thấy trong 1 file- các biến toàn cục có liên kết là internal) < phạm vi toàn cầu(được nhìn thấy trong nhiều file, nghĩa là trong cả chương trình- các biến toàn cục có liên kết external)\
-
-- lưu ý là 1 biến global trong file .h không ảnh hưởng đến file .cpp, vì khi chạy nó chạy file cpp mà, file .h chỉ để include
-
-- nếu khai báo extern mà không khởi tạo, nó sẽ hiểu là khai báo chuyển tiếp cho 1 thằng đã được define ở đâu đó rồi, nếu mà thằng nào cũng extern rồi k khởi tạo, rõ ràng sẽ bị lỗi không tìm thấy thằng nào đã tồn tại để mà tham ch
+- nếu khai báo extern mà không khởi tạo, nó sẽ hiểu là khai báo chuyển tiếp cho 1 thằng đã được define ở đâu đó rồi, nếu mà thằng nào cũng extern rồi k khởi tạo, 
+rõ ràng sẽ bị lỗi không tìm thấy thằng nào đã tồn tại để mà tham chiếu
 
 ==================================================================================================================================================================
 
@@ -1024,7 +1105,8 @@ SIGBUS: truy cập vào 1 địa chỉ không hợp lệ
 
 12. Casting
 static_cast<T>(expression): buộc chuyển đổi ngầm định, có thể cast non-const tới const, void* tới type*, pointer base* tới pointer derived*, pointer derived* tới base*
-- static_cast đương nhiên sẽ check tính tương thích có thể cast khi complier nhưng không check tính an toàn hay toàn vẹn, ví dụ, cast từ 1 kiểu derived* về kiểu base* có thể gây mất dữ liệu chẳng h
+- static_cast đương nhiên sẽ check tính tương thích có thể cast khi complier nhưng không check tính an toàn hay toàn vẹn, ví dụ, cast từ 1 kiểu derived* về kiểu base* 
+có thể gây mất dữ liệu chẳng hạn
 - không thể cast từ const tới non-const -> chỉ có const_cast can do that
 - nếu không phải kế thừa thì không thể cast theo kiểu con trỏ or reference mean T can not be a pointer or reference
 - có thể cast 2 đối tượng chả liên quan gì tới nhau, thuộc 2 type khác nhau, chỗ này sẽ cần 1 contructor để cast - do cơ chế complier thôi, chịu, chắc nó kiểu wrap object
@@ -1061,10 +1143,18 @@ int main () {
     static_cast<TwoClass>(one).display(); it can
     return 0;
 }
-- chỗ này nó tạo 1 object temprary, mean cứ cast kiểu object thì nó sẽ tạo object temprary, nên mọi sự modify sẽ đươcj apply trên object temp đó chứ k phải trên current object
-=> dùng kiểu static_cast<type>(*this)->function() -> nó sẽ tạo ra tem object và thằng function sẽ được gọi trên tem object -> mọi modify sẽ trên tem object chứ k phải trên current object
+- static_cast<TYPE>(variable).function() : nó sẽ tạo ra tem object và thằng function sẽ được gọi trên tem object -> mọi modify sẽ là trên tem object chứ k phải trên current variable
+- static_cast<TYPE&>(variable).function() :như này thì mọi modify sẽ là trên current variable
+
+tương tự với kiểu dữ liệu cơ bản thì 
+int a = 0;
+static_cast<int>(a) = 10 -> WRONG: trả về rvalue thôi, chỉ là giá trị 0 thôi, nó ko cần tạo biến int temp đâu, lm gì gán 0 = 10 được ^^, 
+                                                                                khác là với type define (class, struct) thì nó tạo temp object
+static_cast<int&>(a) = 10; trả về chính biến a đó luôn, ref luôn, nên nó sẽ modify trực tiếp lên a luôn, sau đó a sẽ có giá trị là 10
 /*----------------------------------------------------------------------------------*/
-dynamic_cast<T>(expression) : chỉ chấp nhận cast kiểu con trỏ or reference, cast trong runtime, thực sự tốn kém vì nó so sánh và cast đến kiểu thực sự của object, nếu cast k thành công thì null
+
+dynamic_cast<T>(expression) : chỉ chấp nhận cast kiểu con trỏ or reference, cast trong runtime, thực sự tốn kém vì nó so sánh và cast đến kiểu thực sự của object, 
+nếu cast k thành công thì null
 ví dụ:
 class Animal{
 public:
@@ -1117,8 +1207,12 @@ class Widget {
 - thì nó tường mình và mọi instance đều có type là Widget, nhưng closure class thì chả biết type của instance của nó là gì -> dùng auto thôi
 
 - thì thằng lambda bản chất nó là nó trả về 1 instance của closure class, do đó phải dùng biến auto đấy, có nghĩa nó là 1 object đấy
+-> thực chất đúng thì nên là lambda expression evaluates to a prvalue closure object
+    - prvalue nó là giá trị mà ko địa chỉ bộ nhớ cố định, tóm lại là kiểu rvalue, và rvalue đặc điểm là hủy ngay sau khi xong việc
+    - do đó nếu auto lambda_obj = ..... thì lúc này cái giá trị rvalue này nó được extend life time via thằng lambda_obj đó, xem đoạn chốt, chính là nó
 
-*** kiểu
+*** kiểu mô tả ra như sau:
+
 Widget returnWidget(){
     return Widget;
 }
@@ -1128,6 +1222,7 @@ Widget wd = returnWidget();
 closure_class lambda(){
     return closure_class;
 }
+auto lambda = lambda() - > trả về closure instance 
 
 auto lambda = [](){}; mean [](){} là 1 biểu thức lambda nó sẽ trả về 1 instance của 1 closure_class mà gen ra từ complier 
 
@@ -1142,12 +1237,13 @@ auto lambda = [](){}; mean [](){} là 1 biểu thức lambda nó sẽ trả về
 - và cái việc chạy [](){}() hay là lambda() nó tương tự như kiểu chạy function object của class thôi 
 
 *** ví dụ :
-    int lambda = []() ->  int{
+    auto lambda = []() ->  int{
         static int n = 1;
         n++;
         cout << "lambda: " << n << endl;
         return n;
     };
+    -> lambda(); -> để chạy lambda
     
 nó sẽ kiểu kiểu như:    
     class closure_class {
@@ -1159,12 +1255,16 @@ nó sẽ kiểu kiểu như:
                 return n;
             }
     }
-- type return về và tham số truyền vào thì tùy vào lambda như thế nào
+    (type return về và tham số truyền vào thì tùy vào lambda như thế nào để mô tả thôi)
+    -> closure_class lambda; lambda(); -> gọi operator() của closure_class để chạy lambda
+
 
 *** về capture: có 2 kiểu là capture by value và capture by reference
-việc mình capture làm cho cái closure sẽ gen ra variable tương ứng trong scope nơi lambda được define, nếu capture by value gen 1 biến value bình thường và gán cho giá trị "bằng" thôi,
+việc mình capture làm cho cái closure sẽ gen ra variable tương ứng trong scope nơi lambda được define, nếu capture by value 
+gen 1 biến value bình thường và gán cho giá trị "bằng" thôi,
 còn capture by reference thì nó tạo biến reference tới cái biến nó capture
--> nếu mà lifetime của closure created from lambda tồn tại lâu hơn cái biến được capture -> cái biến reference trong closure tồn tại lâu hơn -> trạng thái dangle
+-> nếu mà lifetime của closure created from lambda tồn tại lâu hơn cái biến được capture -> cái biến reference trong closure tồn tại 
+lâu hơn cái biến mà được capture -> trạng thái dangling
 
 ví dụ:
 using FilterContainer = std::vector<std::function<bool(int)>>; có 1 cái vector chứa các con trỏ hàm
@@ -1181,8 +1281,8 @@ void addDivisorFilter()
 }
 
 - divisor là 1 biến thuộc scope funtion addDivisorFilter, nó sẽ bị hủy, nó sẽ k còn tồn tại khi hàm này kết thúc
-- filters là 1 biến global, bây giờ add cái lambda đó làm 1 phần tử trong vector, thì mỗi lần gọi phần tử đó ra, cái biến ref trong lambda refer to divisor
-mà thằng divisor bị hủy cụ rồi -> dangle -> undefine behavior
+- filters là 1 biến global, bây giờ add cái lambda đó làm 1 phần tử trong vector, thì mỗi lần gọi phần tử đó ra, 
+cái biến ref trong lambda refer to divisor -> mà thằng divisor bị hủy cụ rồi -> dangling -> undefine behavior
 
 ví dụ khác:
 using FilterContainer = std::vector<int*>;
@@ -1206,7 +1306,8 @@ int main (){
     return 0;
 }
 
--> nếu mà cái vùng nhớ của cái biến trong funtion bị hủy đi r, bị sử dụng rồi, thì sẽ oẳng, còn nó vẫn còn free thì nó vẫn chọc vào được và vẫn chạy thôi => thế mới gọi là Undefine Behavior
+-> nếu mà cái vùng nhớ của cái biến trong funtion bị hủy đi r, bị sử dụng rồi, thì sẽ oẳng, còn nó vẫn còn free thì nó vẫn chọc vào được 
+và vẫn chạy thôi => thế mới gọi là Undefine Behavior
 
 -> trong TH này thì chỉ captured by value thôi
 - capture by value cũng có thể dangle khi value lại là con trỏ 
@@ -1215,8 +1316,8 @@ int main (){
 
 *** OKE, Now read here: Use init capture to move objects into closures.
 - đã hiểu closure rồi thì hiểu move object tới closure nó cũng ảo ấy chứ
-nhắc lại: bản chất của lambda là nó return về 1 instance của closure classs và nó chạy như 1 functor luôn, thế nên cái đoạn int capture nó như mình khởi tạo biến thành viên
-của cái class closure đó thôi
+nhắc lại: bản chất của lambda là nó return về 1 instance của closure classs và nó chạy như 1 functor luôn, thế nên cái đoạn 
+int capture nó như mình khởi tạo biến thành viên của cái class closure đó thôi
 
 Using an init capture makes it possible for you to specify
 1. the name of a data member in the closure class generated from the lambda and
@@ -1240,11 +1341,11 @@ làm rõ
 auto func = [pw = std::move(pw)] // init data mbr
  { return pw->isValidated() // pw dùng ở đây là pw của closure class
  && pw->isArchived(); };
--> khai báo lambda, lúc này lambda chưa hề chạy, nó trả về 1 instance của closure class và gán và auto -> khi nào auto bị hủy thì 
+-> khai báo lambda, lúc này lambda chưa hề chạy, nó tạo ra temporary closure object (đối tượng tạm) và gán và auto -> khi nào auto bị hủy thì 
 thằng pw bên trong mới bị hủy
  và
 
  [pw = std::move(pw)] // init data mbr
  { return pw->isValidated() && pw->isArchived(); }();
- -> còn ở đây nó chạy mẹ luôn rồi, nó trả về instance của closure class nhưng k gán cho 1 thằng nào để extend vòng đời của nó nên nó bị 
- hủy luôn ngay sau khi gọi
+ -> còn ở đây nó chạy mẹ luôn rồi, nó tạo ra temporary closure object (đối tượng tạm) nhưng k gán cho 1 thằng nào để extend vòng đời của nó nên nó bị 
+ hủy luôn ngay sau khi gọi, đúng bản chất temporary object rồi đó
