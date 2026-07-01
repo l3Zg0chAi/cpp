@@ -387,6 +387,38 @@ shared_ptr = 0, nghĩa là thằng shared_ptr cuối cùng giữ nó bị hủy,
 Trong TH trên, nếu sử dụng raw pointer, gọi theo cách 1 sẽ bị leak vì khi đó k còn con trỏ nào giữ object đó nữa, gọi theo cách 2 thì ta sẽ không thấy object bị hủy trước 
 khi main kết thúc vì while(true)
 
+*** con trỏ mảng
+
+char arr[10]; 
+
+arr + 1      // char*        → +1 byte   (nhảy 1 phần tử char) 
+&arr + 1     // char(*)[10]  → +10 byte  (nhảy nguyên cả mảng 10 phần tử) 
+
+sizeof(arr)   // 10   (size cả mảng) 
+sizeof(&arr)  // 8    (size 1 con trỏ, trên 64-bit) 
+*(&arr)       // ra lại arr (kiểu char[10]) 
+**(&arr)      // ra arr[0] (char) 
+
+
+char arr[10]; 
+
+memcpy(arr,  src, n); 
+//  arr  → decay thành char*   → convert sang void*  → giá trị = địa_chỉ_arr 
+memcpy(&arr, src, n); 
+//  &arr → là char(*)[10]      → convert sang void*  → giá trị = địa_chỉ_arr (y hệt) 
+
+Chính xác, bạn tổng kết đúng rồi. 👍 
+
+Nói lại theo đúng cách bạn diễn đạt: 
+
+- **Địa chỉ mảng**: luôn cố định ở đó, là cùng một chỗ — dù viết `arr` hay `&arr`, con số địa chỉ không đổi. 
+- **Type của con trỏ** mới là thứ quyết định "bước nhảy" khi thao tác: 
+- `arr` → `char*` → `+1` nhảy **1 byte** 
+- `&arr` → `char(*)[10]` → `+1` nhảy **10 byte** 
+- Cái "bước nhảy" đó chỉ có ý nghĩa **khi compiler còn nhìn thấy type** để làm pointer arithmetic / `sizeof`. 
+- Khi convert sang `void*` (như tham số của `memcpy`) → type bị bỏ đi, **chỉ còn địa chỉ trần**. `memcpy` không làm `+1` trên type gốc, nó tự bước theo `n` byte bạn truyền vào → nên `arr` hay `&arr` không còn khác gì. 
+
+→ Đúng kết luận: trong `memcpy` thì thêm `&` **vô hại nhưng vô ích**. Khác biệt type chỉ "sống" khi còn dùng con trỏ để duyệt/tính toán, chứ qua `void*` là mất.
 ==================================================================================================================================================================
 
 FUNCTION POINTR
